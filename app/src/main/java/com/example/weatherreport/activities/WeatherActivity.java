@@ -1,5 +1,7 @@
 package com.example.weatherreport.activities;
 
+import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -19,13 +21,14 @@ import java.util.List;
 
 public class WeatherActivity extends AppCompatActivity {
     private static final String TAG = "WeatherActivity";
-
     EditText cityInput;
     Button getWeatherBtn;
+    ImageButton logoutButton;
     TextView weatherResult;
     SessionManager session;
     final String API_KEY = "9ae6370955d26e2727f5175288cd0820"; // Insert your API key here
 
+    @SuppressLint({"WrongViewCast", "MissingInflatedId"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate: WeatherActivity started");
@@ -34,9 +37,16 @@ public class WeatherActivity extends AppCompatActivity {
 
         cityInput = findViewById(R.id.cityInput);
         getWeatherBtn = findViewById(R.id.getWeatherBtn);
+        logoutButton = findViewById(R.id.logoutButton);
         weatherResult = findViewById(R.id.weatherResult);
         session = new SessionManager(this);
-
+        logoutButton.setOnClickListener( v -> {
+            session = new SessionManager(this);
+            session.logout();
+            Toast.makeText(this, "Logout successfully", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(WeatherActivity.this, LoginActivity.class);
+            startActivity(intent);
+        });
         getWeatherBtn.setOnClickListener(v -> {
             String city = cityInput.getText().toString().trim();
             Log.d(TAG, "User input city: " + city);
@@ -57,14 +67,13 @@ public class WeatherActivity extends AppCompatActivity {
                 "&limit=1&appid=" + API_KEY;
 
         RequestQueue queue = Volley.newRequestQueue(this);
-        weatherResult.setVisibility(View.VISIBLE);
         StringRequest geoRequest = new StringRequest(Request.Method.GET, geoUrl,
                 response -> {
                     try {
                         JSONArray arr = new JSONArray(response);
                         if (arr.length() == 0) {
                             Log.w(TAG, "fetchWeather: No location found for input: " + cityName);
-
+                            weatherResult.setVisibility(View.VISIBLE);
                             weatherResult.setText("Location not found.");
                             return;
                         }
@@ -79,11 +88,13 @@ public class WeatherActivity extends AppCompatActivity {
 
                     } catch (JSONException e) {
                         Log.e(TAG, "fetchWeather: Geo JSON parsing error: " + e.getMessage(), e);
+                        weatherResult.setVisibility(View.VISIBLE);
                         weatherResult.setText("Error finding location.");
                     }
                 },
                 error -> {
                     Log.e(TAG, "fetchWeather: Geo API request failed: " + error.toString(), error);
+                    weatherResult.setVisibility(View.VISIBLE);
                     weatherResult.setText("Location fetch failed.");
                 });
 
@@ -115,7 +126,7 @@ public class WeatherActivity extends AppCompatActivity {
                                 "Wind: " + wind.getDouble("speed") + " m/s";
 
                         Log.d(TAG, "Parsed Weather Data:\n" + weather);
-
+                        weatherResult.setVisibility(View.VISIBLE);
                         weatherResult.setText(weather);
 
                         saveToHistory(villageName);
@@ -123,11 +134,13 @@ public class WeatherActivity extends AppCompatActivity {
 
                     } catch (JSONException e) {
                         Log.e(TAG, "fetchWeatherByCoordinates: JSON parsing error: " + e.getMessage(), e);
+                        weatherResult.setVisibility(View.VISIBLE);
                         weatherResult.setText("Error parsing weather data.");
                     }
                 },
                 error -> {
                     Log.e(TAG, "fetchWeatherByCoordinates: Weather API request failed: " + error.toString(), error);
+                    weatherResult.setVisibility(View.VISIBLE);
                     weatherResult.setText("Failed to get weather.");
                 });
 
